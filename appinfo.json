@@ -1,0 +1,27 @@
+{
+    "appKeys": {},
+    "capabilities": [
+        "location",
+        "configurable"
+    ],
+    "companyName": "ZoneVR OS, Inc.",
+    "longName": "ZoneVR Player Game Controller",
+    "projectType": "native",
+    "resources": {
+        "media": [
+            {
+                "file": "images/blee_face_pebble_bw.png",
+                "name": "IMAGE_BLEE",
+                "type": "png"
+            }
+        ]
+    },
+    "sdkVersion": "2",
+    "shortName": "ZoneVR Game Controller",
+    "uuid": "bdc92ff5-aad5-4680-aaa6-97cf305ada29",
+    "versionCode": 1,
+    "versionLabel": "1.0",
+    "watchapp": {
+        "watchface": false
+    }
+}
