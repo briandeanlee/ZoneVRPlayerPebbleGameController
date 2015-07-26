@@ -1,7 +1,7 @@
 #include <pebble.h>
 #include "zvrpebble.h"
 #include "pebbleassist.h"
-#define DEBUGGING false
+#define DEBUGGING true
 
 static Window *window;
 
