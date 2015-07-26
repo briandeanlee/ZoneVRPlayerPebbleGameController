@@ -1,7 +1,7 @@
 #include <pebble.h>
 #include "zvrpebble.h"
 #include "pebbleassist.h"
-#define DEBUGGING true
+#define DEBUGGING false
 
 static Window *window;
 
@@ -18,10 +18,14 @@ static TextLayer *compass_text_layer;
 static TextLayer *status_text_layer;
 
 static AppTimer *accel_timer;
+static AppTimer *reset_status_timer;
 static char accel_text[256];
 static char compass_text[32];
 
-
+static void reset_status_timer_callback(void *data) {
+  text_layer_set_text(status_text_layer, "Active");
+  layer_mark_dirty(text_layer_get_layer(status_text_layer));
+}
 
 /*
 static void in_received_handler(DictionaryIterator *iter, void *context) {
@@ -60,17 +64,26 @@ static void out_failed_handler(DictionaryIterator *failed, AppMessageResult reas
 */
 // -----------------------------------------------------------------------------------------------
 static void select_click_handler(ClickRecognizerRef recognizer, void *context) {
+  app_timer_cancel(reset_status_timer);
   text_layer_set_text(status_text_layer, "Select");
+  layer_mark_dirty(text_layer_get_layer(status_text_layer));
+  reset_status_timer = app_timer_register(500 /* milliseconds */, reset_status_timer_callback, NULL);
 }
 
 // -----------------------------------------------------------------------------------------------
 static void up_click_handler(ClickRecognizerRef recognizer, void *context) {
+  app_timer_cancel(reset_status_timer);
   text_layer_set_text(status_text_layer, "Up");
+  layer_mark_dirty(text_layer_get_layer(status_text_layer));
+  reset_status_timer = app_timer_register(500 /* milliseconds */, reset_status_timer_callback, NULL);
 }
 
 // -----------------------------------------------------------------------------------------------
 static void down_click_handler(ClickRecognizerRef recognizer, void *context) {
+  app_timer_cancel(reset_status_timer);
   text_layer_set_text(status_text_layer, "Down");
+  layer_mark_dirty(text_layer_get_layer(status_text_layer));
+  reset_status_timer = app_timer_register(500 /* milliseconds */, reset_status_timer_callback, NULL);
 }
 
 // -----------------------------------------------------------------------------------------------
@@ -97,17 +110,17 @@ static void window_load(Window *window) {
 	text_layer_set_background_color(accel_text_layer, GColorClear);
 	text_layer_set_text_color(accel_text_layer, GColorBlack);
   text_layer_set_text_alignment(accel_text_layer, GTextAlignmentCenter );
-	text_layer_set_text(accel_text_layer, "0  0  0");
+	text_layer_set_text(accel_text_layer, " ");
 
-  compass_text_layer = text_layer_create((GRect) { .origin = { 0, 60 }, .size = { 144, 26 } });
+  compass_text_layer = text_layer_create((GRect) { .origin = { 87, 140 }, .size = { 70, 26 } });
 	text_layer_set_font(compass_text_layer, fonts_get_system_font(FONT_KEY_GOTHIC_24_BOLD));
 	text_layer_set_overflow_mode(compass_text_layer, GTextOverflowModeTrailingEllipsis);
 	text_layer_set_background_color(compass_text_layer, GColorClear);
 	text_layer_set_text_color(compass_text_layer, GColorBlack);
   text_layer_set_text_alignment(compass_text_layer, GTextAlignmentCenter );
-	text_layer_set_text(compass_text_layer, "0 degrees");
+	text_layer_set_text(compass_text_layer, "0°");
   
-  status_text_layer = text_layer_create((GRect) { .origin = { 0, 140 }, .size = { 144, 26 } });
+  status_text_layer = text_layer_create((GRect) { .origin = { 0, 140 }, .size = { 70, 26 } });
 	text_layer_set_font(status_text_layer, fonts_get_system_font(FONT_KEY_GOTHIC_24_BOLD));
 	text_layer_set_overflow_mode(status_text_layer, GTextOverflowModeTrailingEllipsis);
 	text_layer_set_background_color(status_text_layer, GColorClear);
@@ -135,7 +148,6 @@ static void window_unload(Window *window) {
   text_layer_destroy(status_text_layer);
   text_layer_destroy(accel_text_layer);
   text_layer_destroy(compass_text_layer);
-
 	bitmap_layer_destroy(zvrlogo_bitmap_layer);
 }
 
@@ -155,13 +167,13 @@ static void compass_handler(CompassHeadingData data) {
   switch (data.compass_status) {
     // Compass data is not yet valid
     case CompassStatusDataInvalid:
-      snprintf(compass_text, sizeof(compass_text), "Invalid");
+      snprintf(compass_text, sizeof(compass_text), "Error..");
       text_layer_set_text(compass_text_layer, compass_text);
       break;
 
     // Compass is currently calibrating, but a heading is available
     case CompassStatusCalibrating:
-      snprintf(compass_text, sizeof(compass_text), "~ %d degrees", TRIGANGLE_TO_DEG((int)data.true_heading));
+      snprintf(compass_text, sizeof(compass_text), "~%d°", TRIGANGLE_TO_DEG((int)data.true_heading));
       text_layer_set_text(compass_text_layer, compass_text);
       layer_mark_dirty(text_layer_get_layer(compass_text_layer));
 
@@ -169,7 +181,7 @@ static void compass_handler(CompassHeadingData data) {
       break;
     // Compass data is ready for use, write the heading in to the buffer
     case CompassStatusCalibrated: 
-      snprintf(compass_text, sizeof(compass_text), "%d degrees", TRIGANGLE_TO_DEG((int)data.true_heading));
+      snprintf(compass_text, sizeof(compass_text), "%d°", TRIGANGLE_TO_DEG((int)data.true_heading));
       text_layer_set_text(compass_text_layer, compass_text);
       layer_mark_dirty(text_layer_get_layer(compass_text_layer));
 
@@ -180,8 +192,9 @@ static void compass_handler(CompassHeadingData data) {
 
     // CompassStatus is unknown
     default:
-      snprintf(compass_text, sizeof(compass_text), "Unknown");
+      snprintf(compass_text, sizeof(compass_text), "Wait...");
       text_layer_set_text(compass_text_layer, compass_text);
+      layer_mark_dirty(text_layer_get_layer(compass_text_layer));
       break;
   }
   
@@ -200,6 +213,9 @@ static void handle_accel_new_position(AccelData *accel) {
   layer_mark_dirty(text_layer_get_layer(accel_text_layer));
   }
   
+  text_layer_set_text(status_text_layer, "Active");
+  layer_mark_dirty(text_layer_get_layer(status_text_layer));
+
   // Send Accelerometer data thru AppMessage
   
   /*
