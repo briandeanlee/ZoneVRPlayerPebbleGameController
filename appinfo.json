@@ -10,6 +10,17 @@
     "resources": {
         "media": [
             {
+                "file": "fonts/Chalkduster.ttf",
+                "name": "CHALKDUSTER_24",
+                "type": "font"
+            },
+            {
+                "file": "images/zonevr_Z_logo_144x168_72dpi_2bit.png",
+                "menuIcon": true,
+                "name": "Z_LOGO",
+                "type": "png"
+            },
+            {
                 "file": "images/blee_face_pebble_bw.png",
                 "name": "IMAGE_BLEE",
                 "type": "png"
