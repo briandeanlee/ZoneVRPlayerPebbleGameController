@@ -22,9 +22,18 @@ static char accel_text[256];
 static char compass_text[32];
 int old_compass_value;
 
+enum OutMessageKey {
+  OUT_RESERVED_KEY = 0x0,                  // TUPLE_INT
+  BUTTON_PRESSED_KEY = 0x1,            // TUPLE_CHAR
+  COMPASS_DATA_KEY   = 0x2,            // TUPLE_INT
+  ACCELEROMETER_DATA_KEY = 0x3,
+};
+
 enum InMessageKey {
-  BUTTON_PRESSED_KEY = 0x0,            // TUPLE_CHAR
-  COMPASS_DATA_KEY   = 0x1,            // TUPLE_INT
+  IN_RESERVED_KEY = 0x0,                  // TUPLE_INT
+  GAME_STATE_CHANGE_KEY = 0x1,            // TUPLE_CHAR
+  APP_CONTROL_KEY   = 0x2,            // TUPLE_INT
+  
 };
 
 static void reset_status_timer_callback(void *data) {
@@ -32,41 +41,6 @@ static void reset_status_timer_callback(void *data) {
   layer_mark_dirty(text_layer_get_layer(status_text_layer));
 }
 
-/*
-static void in_received_handler(DictionaryIterator *iter, void *context) {
-	Tuple *reward_tuple = dict_find(iter, KEY_REWARDS);
-	Tuple *star_tuple = dict_find(iter, KEY_STARS);
-	Tuple *balance_tuple = dict_find(iter, KEY_BALANCE);
-	Tuple *status_tuple = dict_find(iter, KEY_STATUS);
-
-	if (reward_tuple) {
-		text_layer_set_text(reward_text_layer, reward_tuple->value->cstring);
-	}
-	if (star_tuple) {
-		text_layer_set_text(star_text_layer, star_tuple->value->cstring);
-	}
-	if (balance_tuple) {
-		text_layer_set_text(balance_text_layer, balance_tuple->value->cstring);
-	}
-	if (status_tuple) {
-		text_layer_set_text(status_text_layer, status_tuple->value->cstring);
-	}
-}
-
-
-static void in_dropped_handler(AppMessageResult reason, void *context) {
-	APP_LOG(APP_LOG_LEVEL_DEBUG, "Incoming AppMessage from Pebble dropped, %d", reason);
-}
-
-static void out_sent_handler(DictionaryIterator *sent, void *context) {
-	// outgoing message was delivered
-}
-
-static void out_failed_handler(DictionaryIterator *failed, AppMessageResult reason, void *context) {
-	APP_LOG(APP_LOG_LEVEL_DEBUG, "Failed to send AppMessage to Pebble");
-}
-
-*/
 
 static bool send_char_data_to_phone(int command, char *data) {
   //APP_LOG(APP_LOG_LEVEL_DEBUG, "send_char_data_to_phone IN");
@@ -111,7 +85,7 @@ static void select_click_handler(ClickRecognizerRef recognizer, void *context) {
 
 
   //if (reset_status_timer!=NULL) app_timer_cancel(reset_status_timer);
-  text_layer_set_text(status_text_layer, "Select");
+  text_layer_set_text(status_text_layer, "Pause");
   send_char_data_to_phone(BUTTON_PRESSED_KEY, "Select");
   layer_mark_dirty(text_layer_get_layer(status_text_layer));
   reset_status_timer = app_timer_register(500 /* milliseconds */, reset_status_timer_callback, NULL);
@@ -247,6 +221,12 @@ void inbox_dropped_callback(AppMessageResult reason, void *context) {
 }
 void inbox_received_callback(DictionaryIterator *iterator, void *context) {
   APP_LOG(APP_LOG_LEVEL_ERROR, "Inbox message received!");
+  Tuple *gameState_tuple = dict_find(iterator, GAME_STATE_CHANGE_KEY);
+  if (gameState_tuple)
+  {
+      text_layer_set_text(accel_text_layer, gameState_tuple->value->cstring);
+      layer_mark_dirty(text_layer_get_layer(accel_text_layer));
+  }
 }
 
 
