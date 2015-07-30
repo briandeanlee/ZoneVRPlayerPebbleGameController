@@ -33,7 +33,7 @@ enum InMessageKey {
   IN_RESERVED_KEY = 0x0,                  // TUPLE_INT
   GAME_STATE_CHANGE_KEY = 0x1,            // TUPLE_CHAR
   APP_CONTROL_KEY   = 0x2,            // TUPLE_INT
-  
+  DEVICE_CONTROL_KEY = 0X3,           // TUPLE_CHAR
 };
 
 static void reset_status_timer_callback(void *data) {
@@ -58,7 +58,7 @@ static bool send_char_data_to_phone(int command, char *data) {
   dict_write_tuplet(iter, &tuple);
   dict_write_end(iter);
   app_message_outbox_send();
-          //APP_LOG(APP_LOG_LEVEL_DEBUG, "send_char_data_to_phone OUT");
+  //APP_LOG(APP_LOG_LEVEL_DEBUG, "send_char_data_to_phone OUT");
 
 
   return true;
@@ -220,12 +220,41 @@ void inbox_dropped_callback(AppMessageResult reason, void *context) {
   APP_LOG(APP_LOG_LEVEL_ERROR, "Inbox message dropped!: %s", translate_error(reason));
 }
 void inbox_received_callback(DictionaryIterator *iterator, void *context) {
-  APP_LOG(APP_LOG_LEVEL_ERROR, "Inbox message received!");
+  //APP_LOG(APP_LOG_LEVEL_INFO, "Inbox message received!");
   Tuple *gameState_tuple = dict_find(iterator, GAME_STATE_CHANGE_KEY);
+  Tuple *deviceControl_tuple = dict_find(iterator, DEVICE_CONTROL_KEY);
+
   if (gameState_tuple)
   {
+      APP_LOG(APP_LOG_LEVEL_INFO, "gameState message received: %s", gameState_tuple->value->cstring );
       text_layer_set_text(accel_text_layer, gameState_tuple->value->cstring);
       layer_mark_dirty(text_layer_get_layer(accel_text_layer));
+  }
+  else if (deviceControl_tuple)
+  {
+      APP_LOG(APP_LOG_LEVEL_INFO, "deviceControl message received: %s",deviceControl_tuple->value->cstring );
+
+      if (strcmp(deviceControl_tuple->value->cstring,"BACKLIGHT_ON") ==0)
+        light_enable(true);
+      if (strcmp(deviceControl_tuple->value->cstring,"BACKLIGHT_OFF") ==0)
+        light_enable(false);
+      if (strcmp(deviceControl_tuple->value->cstring,"VIBRATE_SHORT") ==0)
+      {
+        vibes_cancel();
+        vibes_short_pulse();
+      }
+      if (strcmp(deviceControl_tuple->value->cstring,"VIBRATE_LONG") ==0)
+      {
+        vibes_cancel();
+        vibes_long_pulse();
+      }
+      if (strcmp(deviceControl_tuple->value->cstring,"VIBRATE_DOUBLE") ==0)
+      {
+        vibes_cancel();
+        vibes_double_pulse();
+      }
+
+
   }
 }
 
