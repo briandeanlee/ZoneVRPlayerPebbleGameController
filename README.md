@@ -1,3 +1,3 @@
 # ZoneVRPlayerPebbleGameController
-ZoneVR Game Controller for Pebble Watch
+ZoneVR Body Motion Game Controller for Pebble Watch
 - /blee/
